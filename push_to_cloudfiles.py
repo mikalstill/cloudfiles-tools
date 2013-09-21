@@ -3,7 +3,6 @@
 # $1 is the path to the directory to sync
 # $2 is the name of the remote container to use
 
-import cloudfiles
 import datetime
 import json
 import os
@@ -42,7 +41,13 @@ def upload_directory(local_container, remote_container, path):
         if local_file.isdir():
             upload_directory(local_container, remote_container, fullpath)
 
-        elif not local_file.get_path().endswith('.sha512'):
+        elif local_file.get_path().endswith('.sha512'):
+            pass
+
+        elif local_file.get_path().endswith('~'):
+            pass
+
+        else:
             remote_file = remote_dir.get_file(ent)
             print '%s Consider  %s' %(datetime.datetime.now(),
                                       local_file.get_path())
@@ -60,17 +65,7 @@ def upload_directory(local_container, remote_container, path):
                    %(datetime.datetime.now(), local_file.get_path(),
                      utility.DisplayFriendlySize(local_file.size())))
             start_time = time.time()
-
-            # Uploads sometimes timeout. Retry three times.
-            for i in range(3):
-                try:
-                    obj = remote_container.create_object(local_file.get_path())
-                    obj.load_from_filename(local_file.get_path())
-                    break
-                except Exception as e:
-                    print '%s Upload    FAILED (%s)' %(datetime.datetime.now(),
-                                                       e)
-
+            remote_file.store(local_file.get_path())
             remote_file.write_checksum(local_file.checksum())
 
             print ('%s Uploaded  %s (%s)'

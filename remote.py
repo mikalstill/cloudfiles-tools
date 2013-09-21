@@ -135,6 +135,8 @@ class RemoteFile(object):
 
     def checksum(self):
         if 'checksum' in self.cache:
+            print '%s Checksum  %s' %(datetime.datetime.now(),
+                                      self.cache['checksum'])
             return self.cache['checksum']
 
         write_remote_checksum = False
@@ -180,6 +182,7 @@ class RemoteFile(object):
 
         shafile = remote_filename(os.path.join(self.container_path,
                                                '.shalist'))
+        print '%s Updating  %s' %(datetime.datetime.now(), shafile)
 
         for i in range(3):
             try:
@@ -196,3 +199,15 @@ class RemoteFile(object):
 
     def get_path(self):
         return self.path
+
+    def store(self, local_path):
+        # Uploads sometimes timeout. Retry three times.
+        for i in range(3):
+            try:
+                obj = self.container.create_object(remote_filename(local_path))
+                obj.load_from_filename(local_path)
+                break
+            except Exception as e:
+                print '%s Upload    FAILED (%s)' %(datetime.datetime.now(), e)
+
+            
