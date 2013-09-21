@@ -9,9 +9,55 @@ import hashlib
 import json
 import os
 
+import utility
+
 
 def remote_filename(filename):
     return filename.replace('/', '~')
+
+
+def path_join(a, b):
+    if a and b:
+        return os.path.join(a, b)
+    if a:
+        return a
+    return b
+
+
+class RemoteContainer(object):
+    def __init__(self, name):
+        name = name.replace('dfw://', '')
+        self.basename = os.path.basename(name)
+
+        with open(os.path.expanduser('~/.cloudfiles'), 'r') as f:
+            self.conf = json.loads(f.read())
+            self.conn = cloudfiles.get_connection(self.conf['access_key'],
+                                                  self.conf['secret_key'],
+                                                  timeout=30)
+
+        self.container_name = remote_filename(name)
+        self.container = self.conn.create_container(self.container_name)
+        for i in range(3):
+            try:
+                self.container.log_retention(True)
+                break
+            except:
+                pass
+
+        for info in self.conn.list_containers_info():
+            if info['name'] == self.container_name:
+                remote_total = info['bytes']
+                print ('%s Remote store contains %s in %d objects'
+                       %(datetime.datetime.now(),
+                         utility.DisplayFriendlySize(remote_total),
+                         info['count']))
+
+    def get_directory(self, path):
+        return RemoteDirectory(self.container, path_join(self.basename, path))
+
+    def create_object(self, path):
+        return self.container.create_object(
+            remote_filename(path_join(self.basename, path)))
 
 
 class RemoteDirectory(object):
@@ -21,24 +67,30 @@ class RemoteDirectory(object):
         self.shalist = {}
         self.remote_files = {}
 
-        print '%s Fetching shalist for %s' %(datetime.datetime.now(),
-                                             self.path)
+        if not self.path:
+            self.shalist_path = '.shalist'
+            prefix = None
+        else:
+            self.shalist_path = remote_filename(os.path.join(self.path,
+                                                             '.shalist'))
+            prefix = remote_filename(self.path)
+
+        print '%s Fetching shalist %s' %(datetime.datetime.now(),
+                                         self.shalist_path)
         for i in range(3):
             try:
                 self.shalist = json.loads(container.get_object(
-                        remote_filename(os.path.join(self.path,
-                                                     '.shalist'))).read())
+                        remote_filename(self.shalist_path)).read())
                 break
             except:
                 pass
 
         print '%s Finding existing remote files' % datetime.datetime.now()
-        prefix = remote_filename(self.path)
         try:
             marker = None
             while True:
-                results = container.list_objects(prefix=prefix,
-                                                 marker=marker)
+                results = self.container.list_objects(prefix=prefix,
+                                                      marker=marker)
                 print ('%s ... %d results, marker %s'
                        %(datetime.datetime.now(), len(results), marker))
                 if not results:
@@ -64,7 +116,7 @@ class RemoteDirectory(object):
             yield ent
 
     def get_file(self, path):
-        fullpath = os.path.join(self.path, path)
+        fullpath = path_join(self.path, path)
         r = RemoteFile(self.container, self.shalist, self.remote_files,
                        self.path, fullpath)
         if fullpath in self.shalist:
@@ -126,10 +178,11 @@ class RemoteFile(object):
         self.shalist[self.path] = checksum
         self.cache['checksum'] = checksum
 
+        shafile = remote_filename(os.path.join(self.container_path,
+                                               '.shalist'))
+
         for i in range(3):
             try:
-                shafile = remote_filename(os.path.join(self.container_path,
-                                                       '.shalist'))
                 try:
                     obj = self.container.delete_object(shafile)
                 except:
@@ -140,3 +193,6 @@ class RemoteFile(object):
             except Exception as e:
                 print ('%s Upload    FAILED TO UPLOAD CHECKSUM (%s)'
                        %(datetime.datetime.now(), e))
+
+    def get_path(self):
+        return self.path

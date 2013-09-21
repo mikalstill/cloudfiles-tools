@@ -7,9 +7,21 @@ import hashlib
 import os
 
 
+class LocalContainer(object):
+    def __init__(self, name):
+        self.name = name
+        self.path = self.name.replace('file://', '')
+
+    def get_directory(self, path):
+        return LocalDirectory(self.path, path)
+
+
 class LocalDirectory(object):
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, parent, path):
+        if not path:
+            self.path = parent
+        else:
+            self.path = os.path.join(parent, path)
 
     def listdir(self):
         for ent in sorted(os.listdir(self.path), reverse=True):
@@ -47,3 +59,6 @@ class LocalFile(object):
 
     def exists(self):
         return os.path.exists(self.path)
+
+    def get_path(self):
+        return self.path
