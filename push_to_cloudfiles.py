@@ -84,7 +84,7 @@ def upload_directory(local_container, remote_container, path):
                    %(datetime.datetime.now(),
                      utility.DisplayFriendlySize(remote_total)))
 
-            if uploaded > 2 * 1024 * 1024 * 1024:
+            if uploaded > 10 * 1024 * 1024 * 1024:
                 print '%s Maximum upload reached' % datetime.datetime.now()
                 sys.exit(0)
 

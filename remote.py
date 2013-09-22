@@ -3,11 +3,12 @@
 # Methods to handle remote files
 
 
-import cloudfiles
 import datetime
 import hashlib
 import json
 import os
+
+import pyrax
 
 import utility
 
@@ -26,15 +27,17 @@ def path_join(a, b):
 
 class RemoteContainer(object):
     def __init__(self, name):
-        name = name.replace('dfw://', '')
+        region, name = name.split('://')
         self.basename = os.path.basename(name)
 
+        pyrax.set_setting('identity_type', 'rackspace')
         with open(os.path.expanduser('~/.cloudfiles'), 'r') as f:
             self.conf = json.loads(f.read())
-            self.conn = cloudfiles.get_connection(self.conf['access_key'],
-                                                  self.conf['secret_key'],
-                                                  timeout=30)
+            pyrax.set_credentials(self.conf['access_key'],
+                                  self.conf['secret_key'],
+                                  region=region)
 
+        self.conn = pyrax.connect_to_cloudfiles(region=region.upper())
         self.container_name = remote_filename(name)
         self.container = self.conn.create_container(self.container_name)
         for i in range(3):
@@ -54,10 +57,6 @@ class RemoteContainer(object):
 
     def get_directory(self, path):
         return RemoteDirectory(self.container, path_join(self.basename, path))
-
-    def create_object(self, path):
-        return self.container.create_object(
-            remote_filename(path_join(self.basename, path)))
 
 
 class RemoteDirectory(object):
@@ -80,7 +79,7 @@ class RemoteDirectory(object):
         for i in range(3):
             try:
                 self.shalist = json.loads(container.get_object(
-                        remote_filename(self.shalist_path)).read())
+                        remote_filename(self.shalist_path)).fetch())
                 break
             except:
                 pass
@@ -89,23 +88,23 @@ class RemoteDirectory(object):
         try:
             marker = None
             while True:
-                results = self.container.list_objects(prefix=prefix,
-                                                      marker=marker)
+                results = self.container.get_objects(prefix=prefix,
+                                                     marker=marker)
                 print ('%s ... %d results, marker %s'
                        %(datetime.datetime.now(), len(results), marker))
                 if not results:
                     break
 
                 for f in results:
-                    marker = f
-                    if f.endswith('.sha512'):
+                    marker = f.name
+                    if f.name.endswith('.sha512'):
                         pass
-                    elif f.endswith('.shalist'):
+                    elif f.name.endswith('.shalist'):
                         pass
                     else:
-                        self.remote_files[f.replace('~', '/')] = True
+                        self.remote_files[f.name.replace('~', '/')] = True
 
-        except cloudfiles.errors.NoSuchObject:
+        except pyrax.exceptions.NoSuchObject:
             pass
 
         print '%s Found %d existing files' %(datetime.datetime.now(),
@@ -143,7 +142,7 @@ class RemoteFile(object):
 
         try:
             self.cache['checksum'] = self.container.get_object(
-                remote_filename(self.path + '.sha512')).read()
+                remote_filename(self.path + '.sha512')).fetch()
             self.container.delete_object(
                 remote_filename(self.path + '.sha512'))
             write_remote_checksum = True
@@ -154,7 +153,7 @@ class RemoteFile(object):
                    %(datetime.datetime.now(), self.path))
             h = hashlib.sha512()
             h.update(self.container.get_object(
-                    remote_filename(self.path)).read())
+                    remote_filename(self.path)).fetch())
             self.cache['checksum'] = h.hexdigest()
             write_remote_checksum = True
 
@@ -190,8 +189,8 @@ class RemoteFile(object):
                     obj = self.container.delete_object(shafile)
                 except:
                     pass
-                obj = self.container.create_object(shafile)
-                obj.write(json.dumps(self.shalist, sort_keys=True, indent=4))
+                obj = self.container.store_object(
+                    shafile, json.dumps(self.shalist, sort_keys=True, indent=4))
                 break
             except Exception as e:
                 print ('%s Upload    FAILED TO UPLOAD CHECKSUM (%s)'
@@ -204,8 +203,8 @@ class RemoteFile(object):
         # Uploads sometimes timeout. Retry three times.
         for i in range(3):
             try:
-                obj = self.container.create_object(remote_filename(local_path))
-                obj.load_from_filename(local_path)
+                obj = self.container.upload_file(
+                    local_path, obj_name=remote_filename(local_path))
                 break
             except Exception as e:
                 print '%s Upload    FAILED (%s)' %(datetime.datetime.now(), e)
