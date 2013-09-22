@@ -11,13 +11,15 @@ class LocalContainer(object):
     def __init__(self, name):
         self.name = name
         self.path = self.name.replace('file://', '')
+        self.region = 'local'
 
     def get_directory(self, path):
-        return LocalDirectory(self.path, path)
+        return LocalDirectory(self.region, self.path, path)
 
 
 class LocalDirectory(object):
-    def __init__(self, parent, path):
+    def __init__(self, region, parent, path):
+        self.region = region
         if not path:
             self.path = parent
         else:
@@ -29,11 +31,12 @@ class LocalDirectory(object):
 
     def get_file(self, path):
         fullpath = os.path.join(self.path, path)
-        return LocalFile(fullpath)
+        return LocalFile(self.region, fullpath)
 
 
 class LocalFile(object):
-    def __init__(self, path):
+    def __init__(self, region, path):
+        self.region = region
         self.path = path
         self.cache = {}
 

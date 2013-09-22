@@ -16,80 +16,105 @@ import utility
 
 import local
 import remote
-import stores
 
 uploaded = 0
-remote_total = 0
+destination_total = 0
 
 
-def upload_directory(local_container, remote_container, path):
+def upload_directory(source_container, destination_container, path):
     global uploaded
-    global remote_total
+    global destination_total
 
     print '%s Syncing %s' %(datetime.datetime.now(), path)
-    local_dir = local_container.get_directory(path)
-    remote_dir = remote_container.get_directory(path)
+    source_dir = source_container.get_directory(path)
+    destination_dir = destination_container.get_directory(path)
 
-    for ent in local_dir.listdir():
-        if path:
-            fullpath = os.path.join(path, ent)
-        else:
-            fullpath = ent
+    for ent in source_dir.listdir():
+        # NOTE(mikal): this is a work around to handle the historial way
+        # in which the directory name appears in both the container name and
+        # path inside the container for remote stores. It was easier than
+        # rewriting the contents of the remote stores.
+        if source_dir.region != 'local':
+            ent = '/'.join(os.path.split(ent)[1:])
 
-        local_file = local_dir.get_file(ent)
+        fullpath = remote.path_join(path, ent)
+        source_file = source_dir.get_file(ent)
 
-        if local_file.isdir():
-            upload_directory(local_container, remote_container, fullpath)
+        if source_file.isdir():
+            upload_directory(source_container, destination_container, fullpath)
 
-        elif local_file.get_path().endswith('.sha512'):
+        elif source_file.get_path().endswith('.sha512'):
             pass
 
-        elif local_file.get_path().endswith('~'):
+        elif source_file.get_path().endswith('.shalist'):
+            pass
+
+        elif source_file.get_path().endswith('~'):
             pass
 
         else:
-            remote_file = remote_dir.get_file(ent)
+            destination_file = destination_dir.get_file(ent)
             print '%s Consider  %s' %(datetime.datetime.now(),
-                                      local_file.get_path())
-            if remote_file.exists():
+                                      source_file.get_path())
+            if destination_file.exists():
                 print '%s Exists    %s' %(datetime.datetime.now(),
-                                          local_file.get_path())
-                if remote_file.checksum() != local_file.checksum():
+                                          source_file.get_path())
+                if destination_file.checksum() != source_file.checksum():
                     print ('%s Checksum for %s does not match! (%s vs %s)'
-                           %(datetime.datetime.now(), local_file.get_path(),
-                             local_file.checksum(), remote_file.checksum()))
+                           %(datetime.datetime.now(), source_file.get_path(),
+                             source_file.checksum(),
+                             destination_file.checksum()))
                 else:
                     continue
 
+            local_file = source_file.get_path()
+            local_cleanup = False
+            if not source_file.region == 'local':
+                print ('%s Fetching the file from remote location'
+                       % datetime.datetime.now())
+                local_cleanup = True
+                local_file = source_file.fetch()
+
             print ('%s Uploading %s (%s)'
-                   %(datetime.datetime.now(), local_file.get_path(),
-                     utility.DisplayFriendlySize(local_file.size())))
+                   %(datetime.datetime.now(), source_file.get_path(),
+                     utility.DisplayFriendlySize(source_file.size())))
             start_time = time.time()
-            remote_file.store(local_file.get_path())
-            remote_file.write_checksum(local_file.checksum())
+            destination_file.store(local_file)
+            destination_file.write_checksum(source_file.checksum())
+
+            if local_cleanup:
+                os.remove(local_file)
 
             print ('%s Uploaded  %s (%s)'
-                   %(datetime.datetime.now(), local_file.get_path(),
-                     utility.DisplayFriendlySize(local_file.size())))
-            uploaded += local_file.size()
-            remote_total += local_file.size()
+                   %(datetime.datetime.now(), source_file.get_path(),
+                     utility.DisplayFriendlySize(source_file.size())))
+            uploaded += source_file.size()
+            destination_total += source_file.size()
             elapsed = time.time() - start_time
             print '%s Total     %s' %(datetime.datetime.now(),
                                       utility.DisplayFriendlySize(uploaded))
             print ('%s           %s per second'
                    %(datetime.datetime.now(),
-                     utility.DisplayFriendlySize(int(local_file.size() /
+                     utility.DisplayFriendlySize(int(source_file.size() /
                                                      elapsed))))
             print ('%s Stored    %s'
                    %(datetime.datetime.now(),
-                     utility.DisplayFriendlySize(remote_total)))
+                     utility.DisplayFriendlySize(destination_total)))
 
             if uploaded > 10 * 1024 * 1024 * 1024:
                 print '%s Maximum upload reached' % datetime.datetime.now()
                 sys.exit(0)
 
+
+def get_container(url):
+    if url.startswith('file://'):
+        return local.LocalContainer(url)
+    else:
+        return remote.RemoteContainer(url)
+
+
 if __name__ == '__main__':
-    local_container = local.LocalContainer(sys.argv[1])
-    remote_container = remote.RemoteContainer(sys.argv[2])
-    upload_directory(local_container, remote_container, None)
+    source_container = get_container(sys.argv[1])
+    destination_container = get_container(sys.argv[2])
+    upload_directory(source_container, destination_container, None)
     print '%s Finished' % datetime.datetime.now()
