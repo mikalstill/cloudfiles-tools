@@ -267,16 +267,15 @@ class RemoteFile(object):
         conn = pyrax.connect_to_cloudfiles(region=self.region.upper())
         container = conn.create_container(self.container_name)
 
-        (local_fd, local_file) = tempfile.mkstemp()
+        local_dir = tempfile.mkdtemp()
         os.close(local_fd)
         
         for i in range(3):
             try:
-                with open(local_file, 'w') as f:
-                    f.write(container.get_object(
-                            remote_filename(self.path)).fetch())
+                container.get_object(
+                    remote_filename(self.path)).download(local_dir)
                 break
             except Exception as e:
                 print '%s Fetch    FAILED (%s)' %(datetime.datetime.now(), e)
 
-        return local_file
+        return local_dir
