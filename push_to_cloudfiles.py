@@ -71,42 +71,48 @@ def upload_directory(source_container, destination_container, path):
                 else:
                     continue
 
-            local_file = source_file.get_path()
-            local_dir = None
-            local_cleanup = False
-            if not source_file.region == 'local':
-                print ('%s Fetching the file from remote location'
-                       % datetime.datetime.now())
-                local_cleanup = True
-                local_dir = source_file.fetch()
-                local_file = os.path.join(
-                    local_dir, remote.remote_filename(source_file.path))
+            try:
+                local_file = source_file.get_path()
+                local_dir = None
+                local_cleanup = False
+                if not source_file.region == 'local':
+                    print ('%s Fetching the file from remote location'
+                           % datetime.datetime.now())
+                    local_cleanup = True
+                    local_dir = source_file.fetch()
+                    local_file = os.path.join(
+                        local_dir, remote.remote_filename(source_file.path))
 
-            print ('%s Uploading %s (%s)'
-                   %(datetime.datetime.now(), source_file.get_path(),
-                     utility.DisplayFriendlySize(source_file.size())))
-            start_time = time.time()
-            destination_file.store(local_file)
-            destination_file.write_checksum(source_file.checksum())
+                print ('%s Uploading %s (%s)'
+                       %(datetime.datetime.now(), source_file.get_path(),
+                         utility.DisplayFriendlySize(source_file.size())))
+                start_time = time.time()
+                destination_file.store(local_file)
+                destination_file.write_checksum(source_file.checksum())
 
-            if local_cleanup:
-                shutil.rmtree(local_dir)
+                if local_cleanup:
+                    shutil.rmtree(local_dir)
 
-            print ('%s Uploaded  %s (%s)'
-                   %(datetime.datetime.now(), source_file.get_path(),
-                     utility.DisplayFriendlySize(source_file.size())))
-            uploaded += source_file.size()
-            destination_total += source_file.size()
-            elapsed = time.time() - start_time
-            print '%s Total     %s' %(datetime.datetime.now(),
-                                      utility.DisplayFriendlySize(uploaded))
-            print ('%s           %s per second'
-                   %(datetime.datetime.now(),
-                     utility.DisplayFriendlySize(int(source_file.size() /
-                                                     elapsed))))
-            print ('%s Stored    %s'
-                   %(datetime.datetime.now(),
-                     utility.DisplayFriendlySize(destination_total)))
+                print ('%s Uploaded  %s (%s)'
+                       %(datetime.datetime.now(), source_file.get_path(),
+                         utility.DisplayFriendlySize(source_file.size())))
+                uploaded += source_file.size()
+                destination_total += source_file.size()
+                elapsed = time.time() - start_time
+                print '%s Total     %s' %(datetime.datetime.now(),
+                                          utility.DisplayFriendlySize(uploaded))
+                print ('%s           %s per second'
+                       %(datetime.datetime.now(),
+                         utility.DisplayFriendlySize(int(source_file.size() /
+                                                         elapsed))))
+                print ('%s Stored    %s'
+                       %(datetime.datetime.now(),
+                         utility.DisplayFriendlySize(destination_total)))
+            except Exception, e:
+                sys.stderr.write('%s Sync failed for %s: %s'
+                                 %(datetime.datetime.now(),
+                                   source_file.get_path(),
+                                   e))
 
             if uploaded > 10 * 1024 * 1024 * 1024:
                 print '%s Maximum upload reached' % datetime.datetime.now()
