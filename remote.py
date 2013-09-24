@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import tempfile
+import urllib2
 
 import pyrax
 
@@ -221,6 +222,9 @@ class RemoteFile(object):
             return False
         return True
 
+    def islink(self):
+        return False
+
     def exists(self):
         return self.path in self.remote_files
 
@@ -267,15 +271,18 @@ class RemoteFile(object):
         conn = pyrax.connect_to_cloudfiles(region=self.region.upper())
         container = conn.create_container(self.container_name)
 
-        local_dir = tempfile.mkdtemp()
+        (local_fd, local_file) = tempfile.mkstemp()
         os.close(local_fd)
-        
-        for i in range(3):
-            try:
-                container.get_object(
-                    remote_filename(self.path)).download(local_dir)
-                break
-            except Exception as e:
-                print '%s Fetch    FAILED (%s)' %(datetime.datetime.now(), e)
 
-        return local_dir
+        url = container.get_object(remote_filename(self.path)).get_temp_url(
+            3600)
+        try:
+            remote = urllib2.urlopen(url)
+            with open(local_file, 'w') as f:
+                d = remote.read(4096)
+                while d:
+                    f.write(d)
+                    d = remote.read(4096)
+            remote.close()
+
+        return local_file
