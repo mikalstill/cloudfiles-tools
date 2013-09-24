@@ -283,6 +283,7 @@ class RemoteFile(object):
                 while d:
                     f.write(d)
                     d = remote.read(4096)
+        finally:
             remote.close()
 
         return local_file
