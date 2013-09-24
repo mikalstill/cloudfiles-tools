@@ -44,6 +44,9 @@ def upload_directory(source_container, destination_container, path):
         if source_file.isdir():
             upload_directory(source_container, destination_container, fullpath)
 
+        elif source_file.islink():
+            pass
+
         elif source_file.get_path().endswith('.sha512'):
             pass
 

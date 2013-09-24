@@ -60,6 +60,9 @@ class LocalFile(object):
     def isdir(self):
         return os.path.isdir(self.path)
 
+    def islink(self):
+        return os.path.islink(self.path)
+
     def exists(self):
         return os.path.exists(self.path)
 
