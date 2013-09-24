@@ -268,8 +268,6 @@ class RemoteFile(object):
         container = conn.create_container(self.container_name)
 
         local_dir = tempfile.mkdtemp()
-        os.close(local_fd)
-        
         for i in range(3):
             try:
                 container.get_object(
