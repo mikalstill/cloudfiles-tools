@@ -6,7 +6,6 @@
 import datetime
 import json
 import os
-import shutil
 import sys
 import time
 
@@ -72,15 +71,12 @@ def upload_directory(source_container, destination_container, path):
                     continue
 
             local_file = source_file.get_path()
-            local_dir = None
             local_cleanup = False
             if not source_file.region == 'local':
                 print ('%s Fetching the file from remote location'
                        % datetime.datetime.now())
                 local_cleanup = True
-                local_dir = source_file.fetch()
-                local_file = os.path.join(
-                    local_dir, remote.remote_filename(source_file.path))
+                local_file = source_file.fetch()
 
             print ('%s Uploading %s (%s)'
                    %(datetime.datetime.now(), source_file.get_path(),
@@ -90,7 +86,7 @@ def upload_directory(source_container, destination_container, path):
             destination_file.write_checksum(source_file.checksum())
 
             if local_cleanup:
-                shutil.rmtree(local_dir)
+                os.remove(local_file)
 
             print ('%s Uploaded  %s (%s)'
                    %(datetime.datetime.now(), source_file.get_path(),
