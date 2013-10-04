@@ -274,16 +274,22 @@ class RemoteFile(object):
         (local_fd, local_file) = tempfile.mkstemp()
         os.close(local_fd)
 
-        url = container.get_object(remote_filename(self.path)).get_temp_url(
-            3600)
-        try:
-            remote = urllib2.urlopen(url)
+        # Small files we just fetch
+        if self.size() < 100 * 1024 * 1024:
             with open(local_file, 'w') as f:
-                d = remote.read(4096)
-                while d:
-                    f.write(d)
-                    d = remote.read(4096)
-        finally:
-            remote.close()
+                f.write(container.get_object(
+                     remote_filename(self.path)).fetch())
+        else:
+            url = container.get_object(remote_filename(self.path)).get_temp_url(
+                3600)
+            r = urllib2.urlopen(url)
+            try:
+                with open(local_file, 'w') as f:
+                    d = r.read(4096)
+                    while d:
+                        f.write(d)
+                        d = r.read(4096)
+            finally:
+                r.close()
 
         return local_file
