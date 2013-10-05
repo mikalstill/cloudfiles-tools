@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # $1 is the path to the directory to sync
 # $2 is the name of the remote container to use

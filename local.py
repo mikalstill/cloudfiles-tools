@@ -5,6 +5,7 @@
 
 import hashlib
 import os
+import random
 
 
 class LocalContainer(object):
@@ -26,7 +27,9 @@ class LocalDirectory(object):
             self.path = os.path.join(parent, path)
 
     def listdir(self):
-        for ent in sorted(os.listdir(self.path), reverse=True):
+        ents = os.listdir(self.path)
+        random.shuffle(ents)
+        for ent in ents:
             yield ent
 
     def get_file(self, path):
