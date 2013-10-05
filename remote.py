@@ -7,6 +7,8 @@ import datetime
 import hashlib
 import json
 import os
+import progressbar
+import sys
 import tempfile
 import urllib2
 
@@ -189,9 +191,14 @@ class RemoteFile(object):
         except:
             print ('%s Missing checksum for %s'
                    %(datetime.datetime.now(), self.path))
+            local_file = self.fetch()
             h = hashlib.sha512()
-            h.update(container.get_object(
-                    remote_filename(self.path)).fetch())
+            with open(local_file) as f:
+                d = f.read(1024 * 1204)
+                while d:
+                    h.update(d)
+            os.remove(local_file)
+
             self.cache['checksum'] = h.hexdigest()
             write_remote_checksum = True
 
@@ -282,14 +289,29 @@ class RemoteFile(object):
         else:
             url = container.get_object(remote_filename(self.path)).get_temp_url(
                 3600)
+            url = url.replace(' ', '%20')
+            print '%s Fetch URL is %s' %(datetime.datetime.now(), url)
+
+            widgets = ['Fetching: ', ' ', Percentage(), ' ',
+                       Bar(marker=RotatingMarker()), ' ', ETA(), ' ',
+                       FileTransferSpeed()]
+            pbar = ProgressBar(widgets=widgets, maxval=self.size()).start()
+
             r = urllib2.urlopen(url)
+            count = 0
             try:
                 with open(local_file, 'w') as f:
-                    d = r.read(4096)
+                    d = r.read(409600)
+                    count += len(d)
                     while d:
                         f.write(d)
-                        d = r.read(4096)
+                        d = r.read(14096)
+                        count += len(d)
+                        pbar.update(count)
+                        
             finally:
+                pbar.finish()
+                print '%s Fetch finished' % datetime.datetime.now()
                 r.close()
 
         return local_file
