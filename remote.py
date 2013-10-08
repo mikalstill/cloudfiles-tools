@@ -125,7 +125,8 @@ class RemoteDirectory(object):
 
     def listdir(self):
         for ent in self.shalist.keys():
-            yield ent
+            if ent in self.remote_files:
+                yield ent
 
         # Directories don't appear in shalists
         conn = pyrax.connect_to_cloudfiles(region=self.region.upper())
@@ -292,10 +293,12 @@ class RemoteFile(object):
             url = url.replace(' ', '%20')
             print '%s Fetch URL is %s' %(datetime.datetime.now(), url)
 
-            widgets = ['Fetching: ', ' ', Percentage(), ' ',
-                       Bar(marker=RotatingMarker()), ' ', ETA(), ' ',
-                       FileTransferSpeed()]
-            pbar = ProgressBar(widgets=widgets, maxval=self.size()).start()
+            widgets = ['Fetching: ', ' ', progressbar.Percentage(), ' ',
+                       progressbar.Bar(marker=progressbar.RotatingMarker()),
+                       ' ', progressbar.ETA(), ' ',
+                       progressbar.FileTransferSpeed()]
+            pbar = progressbar.ProgressBar(widgets=widgets,
+                                           maxval=self.size()).start()
 
             r = urllib2.urlopen(url)
             count = 0

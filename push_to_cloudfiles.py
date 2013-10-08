@@ -21,6 +21,10 @@ uploaded = 0
 destination_total = 0
 
 
+class NoSuchException(Exception):
+    pass
+
+
 def upload_directory(source_container, destination_container, path):
     global uploaded
     global destination_total
@@ -104,7 +108,7 @@ def upload_directory(source_container, destination_container, path):
                 print ('%s Stored    %s'
                        %(datetime.datetime.now(),
                          utility.DisplayFriendlySize(destination_total)))
-            except Exception, e:
+            except NoSuchException, e:
                 sys.stderr.write('%s Sync failed for %s: %s'
                                  %(datetime.datetime.now(),
                                    source_file.get_path(),
