@@ -135,7 +135,13 @@ def get_container(url):
 if __name__ == '__main__':
     source_container = get_container(sys.argv[1])
     destination_container = get_container(sys.argv[2])
-    upload_directory(source_container, destination_container, None)
+
+    d = None
+    if len(sys.argv) > 3:
+        d = sys.argv[3]
+
+    upload_directory(source_container, destination_container, d)
+
     print '%s Finished' % datetime.datetime.now()
     print '%s Total     %s' %(datetime.datetime.now(),
                               utility.DisplayFriendlySize(uploaded))
