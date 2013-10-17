@@ -123,15 +123,10 @@ def upload_directory(source_container, destination_container, path):
                                    source_file.get_path(),
                                    e))
 
-            print ('%s Clearing queued checksum writes'
-                   % datetime.datetime.now())
-            for sha in queued_shas:
-                queued_shas[sha].write_checksum(sha)
-            queued_shas = {}
-
-            if uploaded > 10 * 1024 * 1024 * 1024:
-                print '%s Maximum upload reached' % datetime.datetime.now()
-                sys.exit(0)
+    print '%s Clearing trailng checksum writes' % datetime.datetime.now()
+    for sha in queued_shas:
+        queued_shas[sha].write_checksum(sha)
+    queued_shas = {}
 
 
 def get_container(url):
