@@ -155,6 +155,30 @@ class RemoteDirectory(object):
              r.cache['checksum'] = self.shalist[fullpath]
         return r
 
+    def update_shalist(self, path, checksum):
+        self.shalist[path] = checksum
+
+    def write_shalist(self, checksum):
+        shafile = remote_filename(os.path.join(self.container_path, '.shalist'))
+        print '%s Updating  %s with %s' %(datetime.datetime.now(), shafile,
+                                          self.path)
+
+        conn = pyrax.connect_to_cloudfiles(region=self.region.upper())
+        container = conn.create_container(self.container_name)
+
+        for i in range(3):
+            try:
+                try:
+                    obj = container.delete_object(shafile)
+                except:
+                    pass
+                obj = container.store_object(
+                    shafile, json.dumps(self.shalist, sort_keys=True, indent=4))
+                break
+            except Exception as e:
+                print ('%s Upload    FAILED TO UPLOAD CHECKSUM (%s)'
+                       %(datetime.datetime.now(), e))
+
 
 class RemoteFile(object):
     def __init__(self, region, container_name, shalist, remote_files,

@@ -96,7 +96,9 @@ def upload_directory(source_container, destination_container, path):
                     print ('%s Clearing queued checksum writes'
                            % datetime.datetime.now())
                     for sha in queued_shas:
-                        queued_shas[sha].write_checksum(sha)
+                        destination_dir.update_shalist(queued_shas[sha].path,
+                                                       sha)
+                    destination_dir.write_shalist()
                     queued_shas = {}
 
                 if local_cleanup:
@@ -125,7 +127,9 @@ def upload_directory(source_container, destination_container, path):
 
     print '%s Clearing trailng checksum writes' % datetime.datetime.now()
     for sha in queued_shas:
-        queued_shas[sha].write_checksum(sha)
+        for sha in queued_shas:
+            destination_dir.update_shalist(queued_shas[sha].path, sha)
+        destination_dir.write_shalist()
     queued_shas = {}
 
 
