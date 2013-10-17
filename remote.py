@@ -159,7 +159,7 @@ class RemoteDirectory(object):
         self.shalist[path] = checksum
 
     def write_shalist(self):
-        shafile = remote_filename(os.path.join(self.container_path, '.shalist'))
+        shafile = remote_filename(os.path.join(self.path, '.shalist'))
         print '%s Updating  %s with %s' %(datetime.datetime.now(), shafile,
                                           self.path)
 
