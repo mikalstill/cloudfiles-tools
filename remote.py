@@ -217,6 +217,7 @@ class RemoteFile(object):
                 d = f.read(1024 * 1204)
                 while d:
                     h.update(d)
+                    d = f.read(1024 * 1024)
             os.remove(local_file)
 
             self.cache['checksum'] = h.hexdigest()
