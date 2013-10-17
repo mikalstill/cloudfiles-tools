@@ -33,6 +33,7 @@ def upload_directory(source_container, destination_container, path):
     source_dir = source_container.get_directory(path)
     destination_dir = destination_container.get_directory(path)
 
+    queued_shas = {}
     for ent in source_dir.listdir():
         # NOTE(mikal): this is a work around to handle the historial way
         # in which the directory name appears in both the container name and
@@ -86,7 +87,11 @@ def upload_directory(source_container, destination_container, path):
                          utility.DisplayFriendlySize(source_file.size())))
                 start_time = time.time()
                 destination_file.store(local_file)
-                destination_file.write_checksum(source_file.checksum())
+                queued_shas[source_file.checksum()] = destination_file
+
+                if len(queued_shas) > 20 or source_file.size() > 1024 * 1024:
+                    for sha in queued_shas:
+                        queued_shas[sha].write_checksum(sha)
 
                 if local_cleanup:
                     os.remove(local_file)
@@ -112,6 +117,9 @@ def upload_directory(source_container, destination_container, path):
                                    source_file.get_path(),
                                    e))
 
+            for sha in queued_shas:
+                xqueued_shas[sha].write_checksum(sha)
+
             if uploaded > 10 * 1024 * 1024 * 1024:
                 print '%s Maximum upload reached' % datetime.datetime.now()
                 sys.exit(0)
@@ -131,4 +139,4 @@ if __name__ == '__main__':
     print '%s Finished' % datetime.datetime.now()
     print '%s Total     %s' %(datetime.datetime.now(),
                               utility.DisplayFriendlySize(uploaded))
-                
+

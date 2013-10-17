@@ -200,7 +200,7 @@ class RemoteFile(object):
 
         if write_remote_checksum:
             self.write_checksum(self.cache['checksum'])
-        
+
         return self.cache['checksum']
 
     def size(self):
@@ -236,11 +236,12 @@ class RemoteFile(object):
         self.cache['checksum'] = checksum
 
         shafile = remote_filename(os.path.join(self.container_path, '.shalist'))
-        print '%s Updating  %s' %(datetime.datetime.now(), shafile)
+        print '%s Updating  %s with %s' %(datetime.datetime.now(), shafile,
+                                          self.path)
 
         conn = pyrax.connect_to_cloudfiles(region=self.region.upper())
         container = conn.create_container(self.container_name)
-        
+
         for i in range(3):
             try:
                 try:
@@ -261,7 +262,7 @@ class RemoteFile(object):
         # Uploads sometimes timeout. Retry three times.
         conn = pyrax.connect_to_cloudfiles(region=self.region.upper())
         container = conn.create_container(self.container_name)
-        
+
         for i in range(3):
             try:
                 obj = container.upload_file(
@@ -306,7 +307,7 @@ class RemoteFile(object):
                         d = r.read(14096)
                         count += len(d)
                         pbar.update(count)
-                        
+
             finally:
                 pbar.finish()
                 print '%s Fetch finished' % datetime.datetime.now()
