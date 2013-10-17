@@ -94,6 +94,7 @@ def upload_directory(source_container, destination_container, path):
                 if len(queued_shas) > 20 or source_file.size() > 1024 * 1024:
                     for sha in queued_shas:
                         queued_shas[sha].write_checksum(sha)
+                    queued_shas = {}
 
                 if local_cleanup:
                     os.remove(local_file)
@@ -121,6 +122,7 @@ def upload_directory(source_container, destination_container, path):
 
             for sha in queued_shas:
                 queued_shas[sha].write_checksum(sha)
+            queued_shas = {}
 
             if uploaded > 10 * 1024 * 1024 * 1024:
                 print '%s Maximum upload reached' % datetime.datetime.now()
