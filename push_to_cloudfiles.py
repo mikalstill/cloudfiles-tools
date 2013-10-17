@@ -120,7 +120,7 @@ def upload_directory(source_container, destination_container, path):
                                    e))
 
             for sha in queued_shas:
-                xqueued_shas[sha].write_checksum(sha)
+                queued_shas[sha].write_checksum(sha)
 
             if uploaded > 10 * 1024 * 1024 * 1024:
                 print '%s Maximum upload reached' % datetime.datetime.now()
