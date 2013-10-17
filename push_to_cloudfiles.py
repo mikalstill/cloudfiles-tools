@@ -88,6 +88,8 @@ def upload_directory(source_container, destination_container, path):
                 start_time = time.time()
                 destination_file.store(local_file)
                 queued_shas[source_file.checksum()] = destination_file
+                print ('%s There are %d queued checksum writes'
+                       %(datetime.datetime.now(), len(queued_shas)))
 
                 if len(queued_shas) > 20 or source_file.size() > 1024 * 1024:
                     for sha in queued_shas:
