@@ -82,16 +82,17 @@ def upload_directory(source_container, destination_container, path):
                     local_cleanup = True
                     local_file = source_file.fetch()
 
+                source_size = source_file.size()
                 print ('%s Uploading %s (%s)'
                        %(datetime.datetime.now(), source_file.get_path(),
-                         utility.DisplayFriendlySize(source_file.size())))
+                         utility.DisplayFriendlySize(source_size)))
                 start_time = time.time()
                 destination_file.store(local_file)
                 queued_shas[source_file.checksum()] = destination_file
                 print ('%s There are %d queued checksum writes'
                        %(datetime.datetime.now(), len(queued_shas)))
 
-                if len(queued_shas) > 20 or source_file.size() > 1024 * 1024:
+                if len(queued_shas) > 20 or source_size > 1024 * 1024:
                     print ('%s Clearing queued checksum writes'
                            % datetime.datetime.now())
                     for sha in queued_shas:
@@ -104,14 +105,14 @@ def upload_directory(source_container, destination_container, path):
                 print ('%s Uploaded  %s (%s)'
                        %(datetime.datetime.now(), source_file.get_path(),
                          utility.DisplayFriendlySize(source_file.size())))
-                uploaded += source_file.size()
-                destination_total += source_file.size()
+                uploaded += source_size
+                destination_total += source_size
                 elapsed = time.time() - start_time
                 print '%s Total     %s' %(datetime.datetime.now(),
                                           utility.DisplayFriendlySize(uploaded))
                 print ('%s           %s per second'
                        %(datetime.datetime.now(),
-                         utility.DisplayFriendlySize(int(source_file.size() /
+                         utility.DisplayFriendlySize(int(source_size /
                                                          elapsed))))
                 print ('%s Stored    %s'
                        %(datetime.datetime.now(),
