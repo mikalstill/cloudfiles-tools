@@ -92,6 +92,8 @@ def upload_directory(source_container, destination_container, path):
                        %(datetime.datetime.now(), len(queued_shas)))
 
                 if len(queued_shas) > 20 or source_file.size() > 1024 * 1024:
+                    print ('%s Clearing queued checksum writes'
+                           % datetime.datetime.now())
                     for sha in queued_shas:
                         queued_shas[sha].write_checksum(sha)
                     queued_shas = {}
@@ -120,6 +122,8 @@ def upload_directory(source_container, destination_container, path):
                                    source_file.get_path(),
                                    e))
 
+            print ('%s Clearing queued checksum writes'
+                   % datetime.datetime.now())
             for sha in queued_shas:
                 queued_shas[sha].write_checksum(sha)
             queued_shas = {}
