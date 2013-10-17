@@ -64,8 +64,6 @@ def upload_directory(source_container, destination_container, path):
             print '%s Consider  %s' %(datetime.datetime.now(),
                                       source_file.get_path())
             if destination_file.exists():
-                print '%s Exists    %s' %(datetime.datetime.now(),
-                                          source_file.get_path())
                 if destination_file.checksum() != source_file.checksum():
                     print ('%s Checksum for %s does not match! (%s vs %s)'
                            %(datetime.datetime.now(), source_file.get_path(),
@@ -131,3 +129,6 @@ if __name__ == '__main__':
     destination_container = get_container(sys.argv[2])
     upload_directory(source_container, destination_container, None)
     print '%s Finished' % datetime.datetime.now()
+    print '%s Total     %s' %(datetime.datetime.now(),
+                              utility.DisplayFriendlySize(uploaded))
+                

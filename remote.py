@@ -88,8 +88,6 @@ class RemoteDirectory(object):
                                                              '.shalist'))
             prefix = remote_filename(self.path)
 
-        print ('%s Fetching shalist %s from %s'
-               %(datetime.datetime.now(), self.shalist_path, self.region))
         for i in range(3):
             try:
                 self.shalist = json.loads(container.get_object(
@@ -147,7 +145,6 @@ class RemoteDirectory(object):
                         dirs[subdir.split('~')[0]] = True
 
         for d in dirs:
-            print '%s Synthesized directory %s' %(datetime.datetime.now(), d)
             yield d
 
     def get_file(self, path):
@@ -172,8 +169,6 @@ class RemoteFile(object):
 
     def checksum(self):
         if 'checksum' in self.cache:
-            print '%s Checksum  %s' %(datetime.datetime.now(),
-                                      self.cache['checksum'])
             return self.cache['checksum']
 
         write_remote_checksum = False
