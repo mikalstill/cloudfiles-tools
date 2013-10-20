@@ -21,11 +21,11 @@ if __name__ == '__main__':
                                          conf['secret_key'],
                                          timeout=30)
 
-    container = conn.get_container('molokai~data~mp3')
+    container = conn.get_container('molokai~data~picture')
     for f in container.get_objects():
         print f.name
         try:
             container.delete_object(f.name)
         except:
             pass
-    conn.delete_container('molokai~data~mp3')
+    conn.delete_container('molokai~data~picture')

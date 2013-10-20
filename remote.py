@@ -308,12 +308,19 @@ class RemoteFile(object):
         url = url.replace(' ', '%20')
         print '%s Fetch URL is %s' %(datetime.datetime.now(), url)
 
+        maxval = self.size()
+        if maxval == 0:
+            # Special case for zero length remote files
+            with open(local_file, 'w') as f:
+                pass
+            return local_file
+        
         widgets = ['Fetching: ', ' ', progressbar.Percentage(), ' ',
                    progressbar.Bar(marker=progressbar.RotatingMarker()),
                    ' ', progressbar.ETA(), ' ',
                    progressbar.FileTransferSpeed()]
         pbar = progressbar.ProgressBar(widgets=widgets,
-                                       maxval=self.size()).start()
+                                       maxval=maxval).start()
 
         r = urllib2.urlopen(url)
         count = 0
