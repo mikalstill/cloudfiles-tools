@@ -49,7 +49,10 @@ class LocalFile(object):
 
         h = hashlib.sha512()
         with open(self.path, 'r') as f:
-            h.update(f.read())
+            d = f.read(1024 * 1204)
+            while d:
+                h.update(d)
+                d = f.read(1024 * 1024)
         self.cache['checksum'] = h.hexdigest()
         return self.cache['checksum']
 
