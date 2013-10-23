@@ -3,6 +3,9 @@
 # $1 is the path to the directory to sync
 # $2 is the name of the remote container to use
 
+# If the environment variable PUSH_NO_CHECKSUM is set, then checksum
+# verification is skipped
+
 import datetime
 import json
 import os
@@ -65,6 +68,10 @@ def upload_directory(source_container, destination_container, path):
             print '%s Consider  %s' %(datetime.datetime.now(),
                                       source_file.get_path())
             if destination_file.exists():
+                if int(os.environ.get('PUSH_NO_CHECKSUM', 0)) == 1:
+                    print '%s ... skipping checksum' % datetime.datetime.now()
+                    continue
+
                 if destination_file.checksum() != source_file.checksum():
                     print ('%s Checksum for %s does not match! (%s vs %s)'
                            %(datetime.datetime.now(), source_file.get_path(),
