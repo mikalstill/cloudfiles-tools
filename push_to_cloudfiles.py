@@ -9,6 +9,7 @@
 import datetime
 import json
 import os
+import re
 import sys
 import time
 
@@ -16,6 +17,7 @@ import utility
 
 import local
 import remote
+import remote2
 
 uploaded = 0
 destination_total = 0
@@ -137,11 +139,23 @@ def upload_directory(source_container, destination_container, path):
     queued_shas = {}
 
 
+REMOTE_RE = re.compile('[a-z]://')
+REMOTE2_RE = re.compile('[a-z]_v2://')
+
+
 def get_container(url):
+    remote_match = REMOTE_RE.match(url)
+    remote2_match = REMOTE2_RE.match(url)
+
     if url.startswith('file://'):
         return local.LocalContainer(url)
-    else:
+    elif remote_match:
         return remote.RemoteContainer(url)
+    elif remote2_match:
+        return remote2.RemoteContainer(url)
+    else:
+        print 'Unknown container URL format'
+        sys.exit(1)
 
 
 if __name__ == '__main__':
