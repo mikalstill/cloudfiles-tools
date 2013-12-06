@@ -142,8 +142,8 @@ def upload_directory(source_container, destination_container, path):
     queued_shas = {}
 
 
-REMOTE_RE = re.compile('[a-z]://')
-REMOTE2_RE = re.compile('[a-z]_v2://')
+REMOTE_RE = re.compile('[a-z]+://')
+REMOTE2_RE = re.compile('[a-z]+_v2://')
 
 
 def get_container(url):
@@ -155,7 +155,7 @@ def get_container(url):
     elif remote_match:
         return remote.RemoteContainer(url)
     elif remote2_match:
-        return remote2.RemoteContainer(url)
+        return remote2.RemoteContainer(url.replace('_v2://', '://'))
     else:
         print 'Unknown container URL format'
         sys.exit(1)
