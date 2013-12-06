@@ -12,9 +12,6 @@ import os
 import sys
 import time
 
-import sys
-sys.path.append('/data/src/stillhq_public/trunk/python/')
-
 import utility
 
 import local
