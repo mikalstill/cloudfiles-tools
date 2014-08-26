@@ -3,9 +3,11 @@
 # Methods to handle local files
 
 
+import datetime
 import hashlib
 import os
 import random
+import shutil
 
 
 class LocalContainer(object):
@@ -36,6 +38,12 @@ class LocalDirectory(object):
         fullpath = os.path.join(self.path, path)
         return LocalFile(self.region, fullpath)
 
+    def update_shalist(self, path, value):
+        pass
+
+    def write_shalist(self):
+        pass
+
 
 class LocalFile(object):
     def __init__(self, region, path):
@@ -62,6 +70,13 @@ class LocalFile(object):
 
         self.cache['size'] = os.path.getsize(self.path)
         return self.cache['size']
+
+    def store(self, local_file):
+        d = os.path.dirname(self.path)
+        if not os.path.exists(d):
+            os.makedirs(d)
+        print '%s Renaming %s to %s' %(datetime.datetime.now(), local_file, self.path)
+        shutil.copy(local_file, self.path)
 
     def isdir(self):
         return os.path.isdir(self.path)
