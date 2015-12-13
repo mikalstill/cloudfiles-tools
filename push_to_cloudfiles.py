@@ -4,8 +4,9 @@
 # $2 is the name of the remote container to use
 
 # If the environment variable PUSH_NO_CHECKSUM is set, then checksum
-# verification is skipped
+# verification is skipped.
 
+import argparse
 import datetime
 import json
 import os
@@ -21,6 +22,8 @@ import remote2
 
 uploaded = 0
 destination_total = 0
+
+ARGS = None
 
 
 class NoSuchException(Exception):
@@ -69,6 +72,10 @@ def upload_directory(source_container, destination_container, path):
             if destination_file.exists():
                 if int(os.environ.get('PUSH_NO_CHECKSUM', 0)) == 1:
                     print '%s ... skipping checksum' % datetime.datetime.now()
+                    if ARGS.delete_local:
+                        print ('%s ... cleaning up file'
+                               % datetime.datetime.now())
+                        os.remove(source_file.get_path())
                     continue
 
                 if destination_file.checksum() != source_file.checksum():
@@ -77,6 +84,10 @@ def upload_directory(source_container, destination_container, path):
                              source_file.checksum(),
                              destination_file.checksum()))
                 else:
+                    if ARGS.delete_local:
+                        print ('%s ... cleaning up file'
+                               % datetime.datetime.now())
+                        os.remove(source_file.get_path())
                     continue
 
             try:
@@ -89,14 +100,19 @@ def upload_directory(source_container, destination_container, path):
                     local_file = source_file.fetch()
 
                 source_size = source_file.size()
-                print ('%s Uploading %s (%s)'
+                print ('%s Transferring %s (%s)'
                        %(datetime.datetime.now(), source_file.get_path(),
                          utility.DisplayFriendlySize(source_size)))
                 start_time = time.time()
                 destination_file.store(local_file)
+                
                 queued_shas[source_file.checksum()] = destination_file
                 print ('%s There are %d queued checksum writes'
                        %(datetime.datetime.now(), len(queued_shas)))
+
+                if ARGS.delete_local:
+                    print '%s ... cleaning up file' % datetime.datetime.now()
+                    os.remove(source_file.get_path())
 
                 if len(queued_shas) > 20 or source_size > 1024 * 1024:
                     print ('%s Clearing queued checksum writes'
@@ -131,7 +147,7 @@ def upload_directory(source_container, destination_container, path):
                                    source_file.get_path(),
                                    e))
 
-    print '%s Clearing trailng checksum writes' % datetime.datetime.now()
+    print '%s Clearing trailing checksum writes' % datetime.datetime.now()
     for sha in queued_shas:
         for sha in queued_shas:
             destination_dir.update_shalist(queued_shas[sha].path, sha)
@@ -159,14 +175,18 @@ def get_container(url):
 
 
 if __name__ == '__main__':
-    source_container = get_container(sys.argv[1])
-    destination_container = get_container(sys.argv[2])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--delete-local', default=False,
+                        action='store_true',
+                        help='Should we delete local files?')
+    parser.add_argument('source')
+    parser.add_argument('destination')
+    ARGS = parser.parse_args()
 
-    d = None
-    if len(sys.argv) > 3:
-        d = sys.argv[3]
+    source_container = get_container(ARGS.source)
+    destination_container = get_container(ARGS.destination)
 
-    upload_directory(source_container, destination_container, d)
+    upload_directory(source_container, destination_container, None)
 
     print '%s Finished' % datetime.datetime.now()
     print '%s Total     %s' %(datetime.datetime.now(),

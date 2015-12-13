@@ -6,6 +6,7 @@
 import hashlib
 import os
 import random
+import shutil
 
 
 class LocalContainer(object):
@@ -35,6 +36,12 @@ class LocalDirectory(object):
     def get_file(self, path):
         fullpath = os.path.join(self.path, path)
         return LocalFile(self.region, fullpath)
+
+    def update_shalist(self, path, checksum):
+        pass
+
+    def write_shalist(self):
+        pass
 
 
 class LocalFile(object):
@@ -74,3 +81,9 @@ class LocalFile(object):
 
     def get_path(self):
         return self.path
+
+    def store(self, path):
+        parentdir = '/'.join(self.path.split('/')[:-1])
+        if not os.path.exists(parentdir):
+            os.makedirs(parentdir)
+        shutil.copy(path, self.path)
