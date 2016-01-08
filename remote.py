@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # Methods to handle remote files
 
 
@@ -7,7 +5,6 @@ import datetime
 import hashlib
 import json
 import os
-import progressbar
 import sys
 import tempfile
 import urllib2
@@ -15,6 +12,14 @@ import urllib2
 import pyrax
 
 import utility
+
+
+has_progressbar = False
+try:
+    import progressbar
+    has_progresbar = True
+except ImportError:
+    pass
 
 
 def remote_filename(filename):
@@ -314,13 +319,14 @@ class RemoteFile(object):
             with open(local_file, 'w') as f:
                 pass
             return local_file
-        
-        widgets = ['Fetching: ', ' ', progressbar.Percentage(), ' ',
-                   progressbar.Bar(marker=progressbar.RotatingMarker()),
-                   ' ', progressbar.ETA(), ' ',
-                   progressbar.FileTransferSpeed()]
-        pbar = progressbar.ProgressBar(widgets=widgets,
-                                       maxval=maxval).start()
+       
+        if has_progressbar: 
+            widgets = ['Fetching: ', ' ', progressbar.Percentage(), ' ',
+                       progressbar.Bar(marker=progressbar.RotatingMarker()),
+                       ' ', progressbar.ETA(), ' ',
+                       progressbar.FileTransferSpeed()]
+            pbar = progressbar.ProgressBar(widgets=widgets,
+                                           maxval=maxval).start()
 
         r = urllib2.urlopen(url)
         count = 0
@@ -332,10 +338,12 @@ class RemoteFile(object):
                     f.write(d)
                     d = r.read(14096)
                     count += len(d)
-                    pbar.update(count)
+                    if has_progressbar:
+                        pbar.update(count)
 
         finally:
-            pbar.finish()
+            if has_progressbar:
+                pbar.finish()
             print '%s Fetch finished' % datetime.datetime.now()
             r.close()
 

@@ -183,6 +183,8 @@ if __name__ == '__main__':
     parser.add_argument('destination')
     ARGS = parser.parse_args()
 
+    print '%s Running with "%s"' %(datetime.datetime.now(), ' '.join(sys.argv))
+
     source_container = get_container(ARGS.source)
     destination_container = get_container(ARGS.destination)
 
