@@ -26,14 +26,6 @@ def remote_filename(filename):
     return filename.replace('/', '~')
 
 
-def path_join(a, b):
-    if a and b:
-        return os.path.join(a, b)
-    if a:
-        return a
-    return b
-
-
 class RemoteContainer(object):
     def __init__(self, name):
         self.region, name = name.split('://')
@@ -71,7 +63,7 @@ class RemoteContainer(object):
 
     def get_directory(self, path):
         return RemoteDirectory(self.region, self.container_name,
-                               path_join(self.basename, path))
+                               utility.path_join(self.basename, path))
 
 
 class RemoteDirectory(object):
@@ -153,7 +145,7 @@ class RemoteDirectory(object):
             yield d
 
     def get_file(self, path):
-        fullpath = path_join(self.path, path)
+        fullpath = utility.path_join(self.path, path)
         r = RemoteFile(self.region, self.container_name, self.shalist,
                        self.remote_files, self.path, fullpath)
         if fullpath in self.shalist:

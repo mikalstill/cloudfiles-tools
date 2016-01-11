@@ -17,8 +17,25 @@ import time
 import utility
 
 import local
-import remote
-import remote2
+
+
+has_pyrax = False
+try:
+    import remote_pyrax
+    has_pyrax = True
+except ImportError, e:
+    print ('%s Could not import pyrax drivers: %s'
+           %(datetime.datetime.now(), e))
+
+
+has_libcloud = False
+try:
+    import remote_libcloud
+    has_libcloud = True
+except ImportError, e:
+    print ('%s Could not import libcloud drivers: %s'
+           %(datetime.datetime.now(), e))
+
 
 uploaded = 0
 destination_total = 0
@@ -40,6 +57,8 @@ def upload_directory(source_container, destination_container, path):
 
     queued_shas = {}
     for ent in source_dir.listdir():
+        print '"%s"' % ent
+        
         # NOTE(mikal): this is a work around to handle the historial way
         # in which the directory name appears in both the container name and
         # path inside the container for remote stores. It was easier than
@@ -47,7 +66,7 @@ def upload_directory(source_container, destination_container, path):
         if source_dir.region != 'local':
             ent = '/'.join(os.path.split(ent)[1:])
 
-        fullpath = remote.path_join(path, ent)
+        fullpath = utility.path_join(path, ent)
         source_file = source_dir.get_file(ent)
 
         if source_file.isdir():
@@ -156,19 +175,19 @@ def upload_directory(source_container, destination_container, path):
 
 
 REMOTE_RE = re.compile('[a-z]+://')
-REMOTE2_RE = re.compile('[a-z]+_v2://')
+LIBCLOUD_RE = re.compile('[a-z0-9]+@[a-z_]+://')
 
 
 def get_container(url):
     remote_match = REMOTE_RE.match(url)
-    remote2_match = REMOTE2_RE.match(url)
+    libcloud_match = LIBCLOUD_RE.match(url)
 
     if url.startswith('file://'):
         return local.LocalContainer(url)
-    elif remote_match:
-        return remote.RemoteContainer(url)
-    elif remote2_match:
-        return remote2.RemoteContainer(url.replace('_v2://', '://'))
+    elif remote_match and has_pyrax:
+        return remote_pyrax.RemoteContainer(url)
+    elif libcloud_match and has_libcloud:
+        return remote_libcloud.RemoteContainer(url)
     else:
         print 'Unknown container URL format'
         sys.exit(1)

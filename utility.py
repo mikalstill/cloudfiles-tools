@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import decimal
+import os
 import types
 import unicodedata
 
@@ -28,3 +29,11 @@ def Normalize(value):
   normalized = unicodedata.normalize('NFKD', unicode(value))
   normalized = normalized.encode('ascii', 'ignore')
   return normalized
+
+
+def path_join(a, b):
+    if a and b:
+        return os.path.join(a, b)
+    if a:
+        return a
+    return b
