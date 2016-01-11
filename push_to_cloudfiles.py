@@ -57,8 +57,6 @@ def upload_directory(source_container, destination_container, path):
 
     queued_shas = {}
     for ent in source_dir.listdir():
-        print '"%s"' % ent
-        
         # NOTE(mikal): this is a work around to handle the historial way
         # in which the directory name appears in both the container name and
         # path inside the container for remote stores. It was easier than
