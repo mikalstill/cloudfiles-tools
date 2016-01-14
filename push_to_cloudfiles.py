@@ -43,10 +43,6 @@ destination_total = 0
 ARGS = None
 
 
-class NoSuchException(Exception):
-    pass
-
-
 def upload_directory(source_container, destination_container, path):
     global uploaded
     global destination_total
@@ -107,62 +103,70 @@ def upload_directory(source_container, destination_container, path):
                         os.remove(source_file.get_path())
                     continue
 
-            try:
-                local_file = source_file.get_path()
-                local_cleanup = False
-                if not source_file.region == 'local':
-                    print ('%s Fetching the file from remote location'
-                           % datetime.datetime.now())
-                    local_cleanup = True
-                    local_file = source_file.fetch()
+            done = False
+            attempts = 0
+            while not done and attempts < 3:
+                try:
+                    local_file = source_file.get_path()
+                    local_cleanup = False
+                    if not source_file.region == 'local':
+                        print ('%s Fetching the file from remote location'
+                               % datetime.datetime.now())
+                        local_cleanup = True
+                        local_file = source_file.fetch()
 
-                source_size = source_file.size()
-                print ('%s Transferring %s (%s)'
-                       %(datetime.datetime.now(), source_file.get_path(),
-                         utility.DisplayFriendlySize(source_size)))
-                start_time = time.time()
-                destination_file.store(local_file)
-                
-                queued_shas[source_file.checksum()] = destination_file
-                print ('%s There are %d queued checksum writes'
-                       %(datetime.datetime.now(), len(queued_shas)))
+                    source_size = source_file.size()
+                    print ('%s Transferring %s (%s)'
+                           %(datetime.datetime.now(), source_file.get_path(),
+                             utility.DisplayFriendlySize(source_size)))
+                    start_time = time.time()
+                    destination_file.store(local_file)
 
-                if ARGS.delete_local:
-                    print '%s ... cleaning up file' % datetime.datetime.now()
-                    os.remove(source_file.get_path())
+                    queued_shas[source_file.checksum()] = destination_file
+                    print ('%s There are %d queued checksum writes'
+                           %(datetime.datetime.now(), len(queued_shas)))
 
-                if len(queued_shas) > 20 or source_size > 1024 * 1024:
-                    print ('%s Clearing queued checksum writes'
-                           % datetime.datetime.now())
-                    for sha in queued_shas:
-                        destination_dir.update_shalist(queued_shas[sha].path,
-                                                       sha)
-                    destination_dir.write_shalist()
-                    queued_shas = {}
+                    if ARGS.delete_local:
+                        print ('%s ... cleaning up file'
+                               % datetime.datetime.now())
+                        os.remove(source_file.get_path())
 
-                if local_cleanup:
-                    os.remove(local_file)
+                    if len(queued_shas) > 20 or source_size > 1024 * 1024:
+                        print ('%s Clearing queued checksum writes'
+                               % datetime.datetime.now())
+                        for sha in queued_shas:
+                            destination_dir.update_shalist(
+                                queued_shas[sha].path, sha)
+                        destination_dir.write_shalist()
+                        queued_shas = {}
 
-                print ('%s Uploaded  %s (%s)'
-                       %(datetime.datetime.now(), source_file.get_path(),
-                         utility.DisplayFriendlySize(source_file.size())))
-                uploaded += source_size
-                destination_total += source_size
-                elapsed = time.time() - start_time
-                print '%s Total     %s' %(datetime.datetime.now(),
-                                          utility.DisplayFriendlySize(uploaded))
-                print ('%s           %s per second'
-                       %(datetime.datetime.now(),
-                         utility.DisplayFriendlySize(int(source_size /
-                                                         elapsed))))
-                print ('%s Stored    %s'
-                       %(datetime.datetime.now(),
-                         utility.DisplayFriendlySize(destination_total)))
-            except NoSuchException, e:
-                sys.stderr.write('%s Sync failed for %s: %s'
-                                 %(datetime.datetime.now(),
-                                   source_file.get_path(),
-                                   e))
+                    if local_cleanup:
+                        os.remove(local_file)
+
+                    print ('%s Uploaded  %s (%s)'
+                           %(datetime.datetime.now(), source_file.get_path(),
+                             utility.DisplayFriendlySize(source_file.size())))
+                    uploaded += source_size
+                    destination_total += source_size
+                    elapsed = time.time() - start_time
+                    print ('%s Total     %s'
+                           %(datetime.datetime.now(),
+                             utility.DisplayFriendlySize(uploaded)))
+                    print ('%s           %s per second'
+                           %(datetime.datetime.now(),
+                             utility.DisplayFriendlySize(int(source_size /
+                                                             elapsed))))
+                    print ('%s Stored    %s'
+                           %(datetime.datetime.now(),
+                             utility.DisplayFriendlySize(destination_total)))
+                    done = True
+
+                except Exception, e:
+                    sys.stderr.write('%s Sync failed for %s (attempt %d): %s'
+                                     %(datetime.datetime.now(),
+                                       source_file.get_path(),
+                                       attempts, e))
+                    attempts += 1
 
     print '%s Clearing trailing checksum writes' % datetime.datetime.now()
     for sha in queued_shas:

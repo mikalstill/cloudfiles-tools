@@ -96,6 +96,9 @@ class RemoteContainer(object):
     def get_class(self):
         return self.storage_class
 
+    def get_provider(self):
+        return self.provider_name
+
 
 class RemoteDirectory(object):
     def __init__(self, parent_container, path):
@@ -274,11 +277,15 @@ class RemoteFile(object):
         return self.path
 
     def store(self, local_path):
+        kwargs = {}
+        if self.parent_container.get_provider() == 's3':
+            kwargs['ex_storage_class'] = self.parent_container.get_class()
+        
         self.conn.upload_object(
             local_path,
             self.parent_container.get_container(),
             remote_filename(self.path),
-            ex_storage_class=self.parent_container.get_class())
+            **kwargs)
 
     def fetch(self):
         obj = self.parent_container.get_container().get_object(
