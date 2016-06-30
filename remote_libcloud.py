@@ -69,14 +69,6 @@ class RemoteContainer(object):
         # Force container creation
         self.get_container()
 
-        for info in self.conn.list_containers():
-            if info.name == self.container_name:
-                remote_total = info.extra.get('size', 0)
-                print ('%s Remote store %s contains %s in %d objects'
-                       %(datetime.datetime.now(), self.region,
-                         utility.DisplayFriendlySize(remote_total),
-                         info.extra.get('object_count', 0)))
-
     def get_directory(self, path):
         return RemoteDirectory(self, utility.path_join(self.basename, path))
 
@@ -135,7 +127,6 @@ class RemoteDirectory(object):
         except libcloud.storage.types.ObjectDoesNotExistError:
             pass
 
-        print '%s Finding existing remote files' % datetime.datetime.now()
         for obj in self.conn.iterate_container_objects(
             self.parent_container.get_container(), ex_prefix=prefix):
             if obj.name.endswith('.sha512'):
@@ -144,9 +135,6 @@ class RemoteDirectory(object):
                 pass
             else:
                 self.remote_files[obj.name.replace('~', '/')] = True
-
-        print ('%s Found %d existing files'
-               %(datetime.datetime.now(), len(self.remote_files)))
 
     def listdir(self):
         for ent in self.shalist.keys():
