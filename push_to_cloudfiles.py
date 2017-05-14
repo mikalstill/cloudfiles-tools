@@ -43,7 +43,7 @@ destination_total = 0
 ARGS = None
 
 
-def upload_directory(source_container, destination_container, path):
+def transfer_directory(source_container, destination_container, path, refilter):
     global uploaded
     global destination_total
 
@@ -64,7 +64,8 @@ def upload_directory(source_container, destination_container, path):
         source_file = source_dir.get_file(ent)
 
         if source_file.isdir():
-            upload_directory(source_container, destination_container, fullpath)
+            transfer_directory(source_container, destination_container,
+                               fullpath, refilter)
 
         elif source_file.islink():
             pass
@@ -82,6 +83,11 @@ def upload_directory(source_container, destination_container, path):
             destination_file = destination_dir.get_file(ent)
             print '%s Consider  %s' %(datetime.datetime.now(),
                                       source_file.get_path())
+            m = refilter.match(source_file.get_path())
+            if not m:
+                print '%s ... skipping due to filter' % datetime.datetime.now()
+                continue
+
             if destination_file.exists():
                 if int(os.environ.get('PUSH_NO_CHECKSUM', 0)) == 1:
                     print '%s ... skipping checksum' % datetime.datetime.now()
@@ -200,6 +206,8 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--delete-local', default=False,
                         action='store_true',
                         help='Should we delete local files?')
+    parser.add_argument('-f', '--filter', default='.*',
+                        help='Optional regexp filter')
     parser.add_argument('source')
     parser.add_argument('destination')
     ARGS = parser.parse_args()
@@ -208,8 +216,10 @@ if __name__ == '__main__':
 
     source_container = get_container(ARGS.source)
     destination_container = get_container(ARGS.destination)
+    refilter = ARGS.filter
 
-    upload_directory(source_container, destination_container, None)
+    transfer_directory(source_container, destination_container, None,
+                       re.compile(refilter))
 
     print '%s Finished' % datetime.datetime.now()
     print '%s Total     %s' %(datetime.datetime.now(),
